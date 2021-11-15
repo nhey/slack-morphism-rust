@@ -5,6 +5,7 @@ use hyper::body::HttpBody;
 use hyper::client::*;
 use hyper::http::StatusCode;
 use hyper::{Body, Request, Response, Uri};
+use hyper_proxy::{Proxy, ProxyConnector, Intercept};
 use hyper_rustls::HttpsConnector;
 use mime::Mime;
 use rvstruct::ValueStruct;
@@ -19,13 +20,28 @@ use url::Url;
 
 #[derive(Clone, Debug)]
 pub struct SlackClientHyperConnector {
-    hyper_connector: Client<HttpsConnector<HttpConnector>>,
+    hyper_connector: Client<ProxyConnector<HttpsConnector<HttpConnector>>>,
 }
 
 impl SlackClientHyperConnector {
-    pub fn new() -> Self {
+    // pub fn new() -> Self {
+    //     let https_connector = HttpsConnector::with_native_roots();
+    //     let http_client = Client::builder().build::<_, hyper::Body>(https_connector);
+    //     Self {
+    //         hyper_connector: http_client,
+    //     }
+    // }
+
+    pub fn new(a: &str) -> Self {
         let https_connector = HttpsConnector::with_native_roots();
-        let http_client = Client::builder().build::<_, hyper::Body>(https_connector);
+        let proxy = {
+            let proxy_uri = a.parse().unwrap();
+            let proxy = Proxy::new(Intercept::Https, proxy_uri);
+            let connector = https_connector;
+            let proxy_connector = ProxyConnector::from_proxy(connector, proxy).unwrap();
+            proxy_connector
+        };
+        let http_client = Client::builder().build::<_, hyper::Body>(proxy);
         Self {
             hyper_connector: http_client,
         }
