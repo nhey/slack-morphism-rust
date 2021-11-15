@@ -18,23 +18,18 @@ use std::collections::HashMap;
 use std::io::Read;
 use url::Url;
 
-pub type SlackClientHyperConnector = SlackClientHyperConnectorGeneric<HttpsConnector<HttpConnector>>;
-
 #[derive(Clone, Debug)]
-pub struct SlackClientHyperConnectorGeneric<H: Send + Sync + Clone + connect::Connect> {
+pub struct SlackClientHyperConnector<H: Send + Sync + Clone + connect::Connect> {
     hyper_connector: Client<H>,
 }
 
-impl SlackClientHyperConnectorGeneric<ProxyConnector<HttpsConnector<HttpConnector>>> {
-    // pub fn new() -> Self {
-    //     let https_connector = HttpsConnector::with_native_roots();
-    //     let http_client = Client::builder().build::<_, hyper::Body>(https_connector);
-    //     Self {
-    //         hyper_connector: http_client,
-    //     }
-    // }
+pub type SlackClientHyperHttpsConnector =
+    SlackClientHyperConnector<HttpsConnector<HttpConnector>>;
+pub type SlackClientHyperProxyHttpsConnector =
+    SlackClientHyperConnector<ProxyConnector<HttpsConnector<HttpConnector>>>;
 
-    pub fn new(a: &str) -> Self {
+impl SlackClientHyperConnector<ProxyConnector<HttpsConnector<HttpConnector>>> {
+    pub fn with_proxy(a: &str) -> Self {
         let https_connector = HttpsConnector::with_native_roots();
         let proxy = {
             let proxy_uri = a.parse().unwrap();
@@ -50,7 +45,7 @@ impl SlackClientHyperConnectorGeneric<ProxyConnector<HttpsConnector<HttpConnecto
     }
 }
 
-impl SlackClientHyperConnectorGeneric<HttpsConnector<HttpConnector>> {
+impl SlackClientHyperConnector<HttpsConnector<HttpConnector>> {
     pub fn new() -> Self {
         let https_connector = HttpsConnector::with_native_roots();
         let http_client = Client::builder().build::<_, hyper::Body>(https_connector);
@@ -60,7 +55,7 @@ impl SlackClientHyperConnectorGeneric<HttpsConnector<HttpConnector>> {
     }
 }
 
-impl<H: 'static + Send + Sync + Clone + connect::Connect> SlackClientHyperConnectorGeneric<H> {
+impl<H: 'static + Send + Sync + Clone + connect::Connect> SlackClientHyperConnector<H> {
     pub(crate) fn parse_query_params(request: &Request<Body>) -> HashMap<String, String> {
         request
             .uri()
@@ -248,7 +243,7 @@ impl<H: 'static + Send + Sync + Clone + connect::Connect> SlackClientHyperConnec
     }
 }
 
-impl<H: 'static + Send + Sync + Clone + connect::Connect> SlackClientHttpConnector for SlackClientHyperConnectorGeneric<H> {
+impl<H: 'static + Send + Sync + Clone + connect::Connect> SlackClientHttpConnector for SlackClientHyperConnector<H> {
     fn http_get_uri<'a, RS>(
         &'a self,
         full_uri: Url,
