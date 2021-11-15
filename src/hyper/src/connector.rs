@@ -28,7 +28,17 @@ pub type SlackClientHyperHttpsConnector =
 pub type SlackClientHyperProxyHttpsConnector =
     SlackClientHyperConnector<ProxyConnector<HttpsConnector<HttpConnector>>>;
 
-impl SlackClientHyperConnector<ProxyConnector<HttpsConnector<HttpConnector>>> {
+impl SlackClientHyperHttpsConnector {
+    pub fn new() -> Self {
+        let https_connector = HttpsConnector::with_native_roots();
+        let http_client = Client::builder().build::<_, hyper::Body>(https_connector);
+        Self {
+            hyper_connector: http_client,
+        }
+    }
+}
+
+impl SlackClientHyperProxyHttpsConnector {
     pub fn with_proxy(url: &str) -> Self {
         let https_connector = HttpsConnector::with_native_roots();
         let proxy = {
@@ -37,16 +47,6 @@ impl SlackClientHyperConnector<ProxyConnector<HttpsConnector<HttpConnector>>> {
             ProxyConnector::from_proxy(https_connector, proxy).unwrap()
         };
         let http_client = Client::builder().build::<_, hyper::Body>(proxy);
-        Self {
-            hyper_connector: http_client,
-        }
-    }
-}
-
-impl SlackClientHyperConnector<HttpsConnector<HttpConnector>> {
-    pub fn new() -> Self {
-        let https_connector = HttpsConnector::with_native_roots();
-        let http_client = Client::builder().build::<_, hyper::Body>(https_connector);
         Self {
             hyper_connector: http_client,
         }
