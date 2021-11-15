@@ -29,14 +29,12 @@ pub type SlackClientHyperProxyHttpsConnector =
     SlackClientHyperConnector<ProxyConnector<HttpsConnector<HttpConnector>>>;
 
 impl SlackClientHyperConnector<ProxyConnector<HttpsConnector<HttpConnector>>> {
-    pub fn with_proxy(a: &str) -> Self {
+    pub fn with_proxy(url: &str) -> Self {
         let https_connector = HttpsConnector::with_native_roots();
         let proxy = {
-            let proxy_uri = a.parse().unwrap();
+            let proxy_uri = url.parse().unwrap();
             let proxy = Proxy::new(Intercept::Https, proxy_uri);
-            let connector = https_connector;
-            let proxy_connector = ProxyConnector::from_proxy(connector, proxy).unwrap();
-            proxy_connector
+            ProxyConnector::from_proxy(https_connector, proxy).unwrap()
         };
         let http_client = Client::builder().build::<_, hyper::Body>(proxy);
         Self {
