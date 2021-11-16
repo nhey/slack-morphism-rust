@@ -54,6 +54,12 @@ impl SlackClientHyperProxyHttpsConnector {
 }
 
 impl<H: 'static + Send + Sync + Clone + connect::Connect> SlackClientHyperConnector<H> {
+    pub fn with_connector(connector: H) -> Self {
+        Self {
+            hyper_connector: Client::builder().build::<_, hyper::Body>(connector),
+        }
+    }
+
     pub(crate) fn parse_query_params(request: &Request<Body>) -> HashMap<String, String> {
         request
             .uri()
